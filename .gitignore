@@ -21,10 +21,7 @@ logs/
 # IDE/editor files
 .idea/
 .vscode/
-*.sublime-workspace
-*.sublime-project
 
-# OS generated files
 .DS_Store
 Thumbs.db
 
@@ -40,6 +37,3 @@ Thumbs.db
 coverage/
 .nyc_output/
 
-# Lock files (optional to keep, but you may want to keep package-lock.json)
-# package-lock.json
-# yarn.lock
