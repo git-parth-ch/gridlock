@@ -25,6 +25,9 @@ function createWindow() {
     }
   });
 
+  // Best-effort: discourage OS-level screen capture (not foolproof)
+  try { mainWindow.setContentProtection(true); } catch (_) {}
+
 
   // In dev, VITE_DEV_SERVER_URL is set by the dev script
   if (process.env.VITE_DEV === '1') {
@@ -68,6 +71,7 @@ const BLOCKED = [
   'CmdOrCtrl+Shift+I', 'CmdOrCtrl+Shift+J', 'CmdOrCtrl+Option+I',
   'CmdOrCtrl+U',        // view source
   'CmdOrCtrl+P',        // print
+  'PrintScreen',
   'CmdOrCtrl+Tab', 'Alt+Tab',
   'Meta+Tab',           // macOS cmd+tab
   'Meta+Space',         // spotlight

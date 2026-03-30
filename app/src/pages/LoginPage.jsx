@@ -11,7 +11,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const { setTeam, setDeviceId, setQuestions, setSessionStatus } = useStore();
+  const { setTeam, setDeviceId, setQuestions, setSessionStatus, startDeviceTimer, setTeamCode, setConnectionStatus } = useStore();
 
   const handleJoin = async () => {
     const code = teamCode.trim().toUpperCase();
@@ -22,9 +22,24 @@ export default function LoginPage() {
       const { data } = await axios.post(`${BACKEND}/api/teams/join`, { teamCode: code });
       setTeam(data.team);
       setDeviceId(data.deviceId);
+      setTeamCode(code);
       setQuestions(data.questions);
+      setConnectionStatus('connecting');
       connectSocket(code, data.deviceId);
-      setSessionStatus(data.team.status === 'active' ? 'active' : 'waiting');
+      startDeviceTimer();
+      try {
+        localStorage.setItem('gridlock_session', JSON.stringify({
+          teamCode: code,
+          deviceId: data.deviceId,
+        }));
+      } catch (_) {}
+      // Map DB team status to UI session state
+      setSessionStatus(
+        data.team.status === 'active' ? 'active' :
+        data.team.status === 'frozen' ? 'frozen' :
+        data.team.status === 'disqualified' ? 'disqualified' :
+        'waiting'
+      );
     } catch (e) {
       const msg = e.response?.data?.error;
       if (msg === 'disqualified') setError('This team has been disqualified.');
@@ -40,7 +55,7 @@ export default function LoginPage() {
       <div className="max-w-md w-full">
         <h1 className="text-5xl font-bold text-white text-center tracking-widest mb-2">GRIDLOCK</h1>
         <p className="text-gray-500 text-center text-xs uppercase tracking-widest mb-12">
-          CTRL+ALT+DEFEAT — Codeathon
+          GRIDLOCK - Codeathon
         </p>
 
         <label className="block text-gray-400 text-xs uppercase tracking-widest mb-2">
@@ -51,7 +66,7 @@ export default function LoginPage() {
           value={teamCode}
           onChange={e => setCode(e.target.value.toUpperCase())}
           onKeyDown={e => e.key === 'Enter' && handleJoin()}
-          placeholder="GRIDLOCK-FALCON-447"
+          placeholder="GRIDLOCK-TEAM-XXX"
           className="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-4 text-white text-lg
                      font-mono tracking-widest focus:outline-none focus:border-gray-400 mb-4"
           autoFocus

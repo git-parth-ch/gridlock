@@ -5,9 +5,46 @@ module.exports = (io) => {
   // ── Violation counter per team (in-memory, reset on restart) ──
   const violationCounts = {};   // { teamCode: { W: 0, F: 0 } }
 
+  // Track which socket(s) belong to which deviceId, so we can kick them on logout.
+  // { [deviceId]: Set<socketId> }
+  const deviceSockets = {};
+
+  const addDeviceSocket = (deviceId, socketId) => {
+    if (!deviceId) return;
+    if (!deviceSockets[deviceId]) deviceSockets[deviceId] = new Set();
+    deviceSockets[deviceId].add(socketId);
+  };
+
+  const removeDeviceSocket = (deviceId, socketId) => {
+    if (!deviceId || !deviceSockets[deviceId]) return;
+    deviceSockets[deviceId].delete(socketId);
+    if (deviceSockets[deviceId].size === 0) delete deviceSockets[deviceId];
+  };
+
   const getCount = (code) => {
     if (!violationCounts[code]) violationCounts[code] = { W: 0, F: 0 };
     return violationCounts[code];
+  };
+
+  const accumulateAndFreezeTeam = async (code) => {
+    const { data: team } = await supabase
+      .from('teams')
+      .select('started_at, total_time_seconds, status')
+      .eq('code', code)
+      .single();
+
+    if (!team || team.status !== 'active' || !team.started_at) {
+      await supabase.from('teams').update({ status: 'frozen' }).eq('code', code);
+      return;
+    }
+
+    const startedMs = new Date(team.started_at).getTime();
+    const add = Number.isNaN(startedMs) ? 0 : Math.max(0, Math.floor((Date.now() - startedMs) / 1000));
+    const total = (team.total_time_seconds || 0) + add;
+
+    await supabase.from('teams')
+      .update({ status: 'frozen', total_time_seconds: total, started_at: null })
+      .eq('code', code);
   };
 
   io.on('connection', (socket) => {
@@ -18,6 +55,8 @@ module.exports = (io) => {
       socket.join(code);
       socket.teamCode = code;
       socket.deviceId = deviceId;
+
+      addDeviceSocket(deviceId, socket.id);
 
       // Update device last_seen + increment device count
       await supabase.from('devices')
@@ -83,7 +122,7 @@ module.exports = (io) => {
 
       // Auto-freeze at 5
       if (total >= 5) {
-        await supabase.from('teams').update({ status: 'frozen' }).eq('code', code);
+        await accumulateAndFreezeTeam(code);
         io.to(code).emit('session_frozen', { reason: 'violation_threshold' });
       }
     });
@@ -101,9 +140,12 @@ module.exports = (io) => {
       if (!socket.teamCode || !socket.deviceId) return;
       const code = socket.teamCode;
 
+      // Remove device record so new joins aren't blocked by stale devices.
       await supabase.from('devices')
-        .update({ last_seen: new Date().toISOString() })
+        .delete()
         .eq('id', socket.deviceId);
+
+      removeDeviceSocket(socket.deviceId, socket.id);
 
       const { count } = await supabase
         .from('devices')
@@ -111,10 +153,10 @@ module.exports = (io) => {
         .eq('team_code', code);
 
       await supabase.from('teams')
-        .update({ devices_connected: Math.max(0, count - 1) })
+        .update({ devices_connected: Math.max(0, count) })
         .eq('code', code);
 
-      io.to(code).emit('device_update', { deviceCount: Math.max(0, count - 1) });
+      io.to(code).emit('device_update', { deviceCount: Math.max(0, count) });
     });
   });
 };

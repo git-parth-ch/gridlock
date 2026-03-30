@@ -1,5 +1,6 @@
 // backend/routes/submissions.js
 const router   = require('express').Router();
+const bcrypt   = require('bcryptjs');
 const supabase = require('../db/supabase');
 
 // POST /api/submissions   { teamCode, questionId, answer, deviceId }
@@ -11,7 +12,7 @@ router.post('/', async (req, res) => {
 
   const code = teamCode.trim().toUpperCase();
 
-  // Look up the question to check the correct answer
+  // Look up the question to check the correct answer (stored as bcrypt hash in DB)
   const { data: question, error: qErr } = await supabase
     .from('questions')
     .select('*')
@@ -22,7 +23,18 @@ router.post('/', async (req, res) => {
     return res.status(404).json({ error: 'Question not found' });
   }
 
-  const isCorrect = answer.trim().toLowerCase() === (question.answer || '').trim().toLowerCase();
+  const plain = answer.trim();
+  let isCorrect = false;
+  if (question.answer_hash) {
+    try {
+      isCorrect = await bcrypt.compare(plain, question.answer_hash);
+    } catch (_) {
+      isCorrect = false;
+    }
+  }
+  if (!isCorrect && question.answer) {
+    isCorrect = plain.toLowerCase() === String(question.answer).trim().toLowerCase();
+  }
 
   // Record the submission
   const { error: insertErr } = await supabase.from('submissions').insert({
@@ -52,7 +64,11 @@ router.post('/', async (req, res) => {
     }
   }
 
-  res.json({ isCorrect, segmentValue: isCorrect ? question.coordinate_segment : null });
+  res.json({
+    isCorrect,
+    segmentValue: isCorrect ? question.segment_value : null,
+    coordinateSegment: isCorrect ? question.coordinate_segment : null,
+  });
 });
 
 module.exports = router;

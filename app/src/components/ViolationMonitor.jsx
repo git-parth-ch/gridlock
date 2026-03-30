@@ -36,6 +36,7 @@ function ViolationToast({ message, severity, onDone }) {
 
 export default function ViolationMonitor() {
   const sessionStatus = useStore(s => s.sessionStatus);
+  const resetSession  = useStore(s => s.resetSession);
   const [toast, setToast] = useState(null);
 
   const showToast = (message, severity) => {
@@ -88,16 +89,27 @@ export default function ViolationMonitor() {
     // Keyboard shortcuts
     const blockKeys = (e) => {
       const ctrl = e.ctrlKey || e.metaKey;
-      const blocked = [
-        ctrl && (e.key === 'c' || e.key === 'v' || e.key === 'a'),
-        ctrl && e.key === 'p',
-        ctrl && e.key === 'u',
-        e.key === 'F12',
-        ctrl && e.shiftKey && (e.key === 'I' || e.key === 'J'),
-      ];
-      if (blocked.some(Boolean)) {
+      const key = e.key;
+
+      // Common in-app shortcuts we want to forbid and count as violations.
+      const blockedShortcut =
+        ctrl && (key === 'c' || key === 'v' || key === 'a' || key === 'x' || key === 's') ||
+        ctrl && (key === 'p' || key === 'u') ||
+        ctrl && e.shiftKey && (key === 'I' || key === 'J' || key === 'C') ||
+        key === 'F12';
+
+      // Best-effort screenshot blockers (cannot fully prevent at OS level)
+      const screenshotKey =
+        key === 'PrintScreen' ||
+        (ctrl && key === 'PrintScreen') ||
+        (ctrl && e.shiftKey && key.toLowerCase() === 's');
+
+      if (blockedShortcut) {
         e.preventDefault();
-        report('SHORTCUT', 'INFO', 'Shortcut blocked.');
+        report('SHORTCUT', 'WARNING', 'Keyboard shortcut usage is forbidden and has been logged.');
+      } else if (screenshotKey) {
+        e.preventDefault();
+        report('SCREENSHOT_ATTEMPT', 'WARNING', 'Screenshots/screen recording are forbidden and have been logged.');
       }
     };
 
@@ -115,13 +127,24 @@ export default function ViolationMonitor() {
     };
   }, [sessionStatus]);
 
+  // Admin-initiated / server-initiated logout that should apply everywhere.
+  useEffect(() => {
+    const handleForceLogout = () => {
+      socket.disconnect();
+      resetSession();
+    };
+
+    socket.on('force_logout', handleForceLogout);
+    return () => socket.off('force_logout', handleForceLogout);
+  }, [resetSession]);
+
   // Electron main process events
   useEffect(() => {
     window.electronAPI?.onFullscreenWarning(() => {
       report('FULLSCREEN_EXIT', 'WARNING', 'Warning: Fullscreen exit detected.');
     });
     window.electronAPI?.onShortcutBlocked(() => {
-      report('SHORTCUT', 'INFO', 'Shortcut blocked.');
+      report('SHORTCUT', 'WARNING', 'Keyboard shortcut usage is forbidden and has been logged.');
     });
   }, []);
 

@@ -84,6 +84,12 @@ export default function AdminDashboard() {
     adminSocket?.emit('admin_message', { teamCode: code, message });
   };
 
+  const handleLogout = async (code) => {
+    if (!confirm(`Log out the device for ${code}?`)) return;
+    await api('post', `/api/admin/logout/${code}`);
+    fetchLeaderboard();
+  };
+
   const statusColor = {
     active:        'text-green-400',
     waiting:       'text-blue-400',
@@ -101,6 +107,7 @@ export default function AdminDashboard() {
         onFreeze={handleFreeze}
         onDisqualify={handleDisqualify}
         onMessage={handleMessage}
+        onLogout={handleLogout}
       />
     );
   }

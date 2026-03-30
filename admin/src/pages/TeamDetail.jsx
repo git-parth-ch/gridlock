@@ -16,7 +16,7 @@ const SEV_COLOR = {
 };
 
 export default function TeamDetail({
-  teamCode, onBack, onUnfreeze, onFreeze, onDisqualify, onMessage
+  teamCode, onBack, onUnfreeze, onFreeze, onDisqualify, onMessage, onLogout
 }) {
   const [violations, setViolations] = useState([]);
   const [msg, setMsg] = useState('');
@@ -51,6 +51,7 @@ export default function TeamDetail({
             <Btn color="yellow" onClick={() => onUnfreeze(teamCode, false)}  label="⚠️ Unfreeze (keep count)" />
             <Btn color="red"    onClick={() => onFreeze(teamCode)}           label="🔒 Freeze" />
             <Btn color="gray"   onClick={() => onDisqualify(teamCode)}       label="🚫 Disqualify" />
+            <Btn color="gray"   onClick={() => onLogout?.(teamCode)}        label="⏏ Log out device" />
           </div>
         </div>
 

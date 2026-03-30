@@ -1,6 +1,6 @@
 import useStore from '../store/useStore';
 
-export default function CoordinateReveal({ coordinate }) {
+export default function CoordinateReveal({ coordinate, onLogout }) {
   const segments = useStore(s => s.segments);
 
   // Build the coordinate string from collected segments
@@ -21,6 +21,14 @@ export default function CoordinateReveal({ coordinate }) {
   return (
     <div className="min-h-screen bg-black flex flex-col items-center justify-center p-8 select-none">
       <div className="relative z-10 text-center max-w-xl w-full">
+        {onLogout && (
+          <button
+            onClick={onLogout}
+            className="absolute top-0 right-0 mt-2 mr-2 px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white hover:bg-white/20 text-sm"
+          >
+            Logout
+          </button>
+        )}
         <p className="text-green-500 text-xs uppercase tracking-widest mb-8 animate-pulse">
           All questions solved
         </p>
