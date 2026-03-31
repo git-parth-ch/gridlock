@@ -61,6 +61,7 @@ export default function DashboardPage() {
               <span className="text-elite-dark"><DeviceTimer /></span>
             </div>
           </div>
+          <ViolationBadge />
           <button
             onClick={logout}
             className="px-4 py-2 border-[1px] border-gray-300 text-[10px] font-bold tracking-[0.1em] uppercase hover:bg-gray-100 transition-colors"

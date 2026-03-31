@@ -75,8 +75,22 @@ module.exports = (io) => {
       // Notify all room members
       io.to(code).emit('device_update', { deviceCount: count });
 
-      // Send current violation count to this socket
-      socket.emit('violation_count', getCount(code));
+      // Send current violation count from DB to this socket
+      const { count: wCount } = await supabase
+        .from('violations')
+        .select('*', { count: 'exact', head: true })
+        .eq('team_code', code)
+        .eq('severity', 'WARNING');
+
+      const { count: fCount } = await supabase
+        .from('violations')
+        .select('*', { count: 'exact', head: true })
+        .eq('team_code', code)
+        .eq('severity', 'FLAG');
+
+      const freshCounts = { W: wCount || 0, F: fCount || 0 };
+      violationCounts[code] = freshCounts;
+      socket.emit('violation_count', freshCounts);
     });
 
     // ── Question opened by a device ────────────────────────────
@@ -111,9 +125,23 @@ module.exports = (io) => {
         severity
       });
 
-      const counts = getCount(code);
-      if (severity === 'WARNING') counts.W++;
-      if (severity === 'FLAG')    counts.F++;
+      // Always read the REAL count from DB (not stale in-memory)
+      const { count: wCount } = await supabase
+        .from('violations')
+        .select('*', { count: 'exact', head: true })
+        .eq('team_code', code)
+        .eq('severity', 'WARNING');
+
+      const { count: fCount } = await supabase
+        .from('violations')
+        .select('*', { count: 'exact', head: true })
+        .eq('team_code', code)
+        .eq('severity', 'FLAG');
+
+      const counts = { W: wCount || 0, F: fCount || 0 };
+
+      // Keep in-memory cache in sync for join_team initial load
+      violationCounts[code] = counts;
 
       const total = counts.W + counts.F;
 

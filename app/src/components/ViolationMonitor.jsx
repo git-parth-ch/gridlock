@@ -43,29 +43,49 @@ export default function ViolationMonitor() {
     setToast({ message, severity, key: Date.now() });
   };
 
+  // Full violation: emits to backend + shows toast (counts toward freeze)
   const report = (type, severity, message) => {
     console.log('VIOLATION:', type, severity, message);
     socket.emit('violation', { type, severity });
     showToast(message, severity);
   };
 
+  // Warn only: shows toast but does NOT emit to backend (no freeze penalty)
+  const warnOnly = (message, severity = 'INFO') => {
+    showToast(message, severity);
+  };
+
   useEffect(() => {
-    if (sessionStatus !== 'active' && sessionStatus !== 'waiting') return;
+    if (sessionStatus !== 'active') return;
+
+    // Debounce tracker: prevent the same violation type firing more than once per 2s
+    const lastFired = {};
+    const DEBOUNCE_MS = 2000;
+
+    const debounced = (type, fn) => {
+      const now = Date.now();
+      if (lastFired[type] && now - lastFired[type] < DEBOUNCE_MS) return;
+      lastFired[type] = now;
+      fn();
+    };
 
     // Tab / window switch
     const handleVisibility = () => {
       if (document.hidden) {
-        report('TAB_SWITCH', 'WARNING', 'Warning: Tab switch detected. This has been logged.');
+        debounced('TAB_SWITCH', () =>
+          report('TAB_SWITCH', 'WARNING', 'Warning: Tab switch detected. This has been logged.')
+        );
       }
     };
 
     // Fullscreen exit
     const handleFullscreen = () => {
-      // Only enforce fullscreen if we're in the Electron app
       const isElectron = !!window.electronAPI;
       if (isElectron && !document.fullscreenElement) {
-        report('FULLSCREEN_EXIT', 'WARNING', 'Warning: Fullscreen exit detected. Please stay fullscreen.');
-        document.documentElement.requestFullscreen?.().catch(() => { });
+        debounced('FULLSCREEN_EXIT', () => {
+          report('FULLSCREEN_EXIT', 'WARNING', 'Warning: Fullscreen exit detected. Please stay fullscreen.');
+          document.documentElement.requestFullscreen?.().catch(() => { });
+        });
       }
     };
 
@@ -91,14 +111,12 @@ export default function ViolationMonitor() {
       const ctrl = e.ctrlKey || e.metaKey;
       const key = e.key;
 
-      // Common in-app shortcuts we want to forbid and count as violations.
       const blockedShortcut =
         ctrl && (key === 'c' || key === 'v' || key === 'a' || key === 'x' || key === 's') ||
         ctrl && (key === 'p' || key === 'u') ||
         ctrl && e.shiftKey && (key === 'I' || key === 'J' || key === 'C') ||
         key === 'F12';
 
-      // Best-effort screenshot blockers (cannot fully prevent at OS level)
       const screenshotKey =
         key === 'PrintScreen' ||
         (ctrl && key === 'PrintScreen') ||
@@ -106,10 +124,14 @@ export default function ViolationMonitor() {
 
       if (blockedShortcut) {
         e.preventDefault();
-        report('SHORTCUT', 'WARNING', 'Keyboard shortcut usage is forbidden and has been logged.');
+        debounced('SHORTCUT', () =>
+          warnOnly('This keyboard shortcut is disabled during the event.', 'INFO')
+        );
       } else if (screenshotKey) {
         e.preventDefault();
-        report('SCREENSHOT_ATTEMPT', 'WARNING', 'Screenshots/screen recording are forbidden and have been logged.');
+        debounced('SCREENSHOT', () =>
+          report('SCREENSHOT_ATTEMPT', 'WARNING', 'Screenshots/screen recording are forbidden and have been logged.')
+        );
       }
     };
 

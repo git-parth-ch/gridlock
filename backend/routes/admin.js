@@ -103,20 +103,22 @@ router.get('/leaderboard', adminAuth, async (req, res) => {
 
   const nowMs = Date.now();
 
-  res.json(teams.map((t, i) => {
+  // Compute real total time, then re-sort so ranking is accurate for live timers
+  const withRealTime = teams.map(t => {
     const stored = t.total_time_seconds ?? 0;
     const running = (t.status === 'active' && t.started_at)
       ? Math.max(0, Math.floor((nowMs - new Date(t.started_at).getTime()) / 1000))
       : 0;
     const total = stored + (Number.isFinite(running) ? running : 0);
+    return { ...t, total_time_seconds: total, violations: vMap[t.code] || { W: 0, F: 0 } };
+  });
 
-    return ({
-      rank: i + 1,
-      ...t,
-      total_time_seconds: total,
-      violations: vMap[t.code] || { W: 0, F: 0 }
-    });
-  }));
+  withRealTime.sort((a, b) => {
+    if (b.questions_solved !== a.questions_solved) return b.questions_solved - a.questions_solved;
+    return a.total_time_seconds - b.total_time_seconds;
+  });
+
+  res.json(withRealTime.map((t, i) => ({ rank: i + 1, ...t })));
 });
 
 // POST /api/admin/start    – release all teams from waiting room
@@ -211,12 +213,11 @@ router.get('/question-times/:code', adminAuth, async (req, res) => {
 
   const { data: questions } = await supabase
     .from('questions')
-    .select('id, title, display_order')
-    .eq('question_set_id', team.question_set_id)
+    .select('id, type, topic, display_order')
+    .eq('set_id', team.question_set_id)
     .order('display_order', { ascending: true });
 
   const qList = questions || [];
-  const qMap = new Map(qList.map(q => [q.id, q]));
 
   const { data: subs } = await supabase
     .from('submissions')
@@ -227,22 +228,30 @@ router.get('/question-times/:code', adminAuth, async (req, res) => {
 
   const best = new Map(); // questionId -> { time, submitted_at }
   for (const s of (subs || [])) {
-    const t = typeof s.time_since_start === 'number' ? s.time_since_start : null;
-    if (t == null) continue;
+    let t = s.time_since_start;
+    if (typeof t === 'string') t = parseInt(t, 10);
+    if (typeof t !== 'number' || isNaN(t)) t = null;
+
     const prev = best.get(s.question_id);
-    if (!prev || t < prev.time) best.set(s.question_id, { time: t, submitted_at: s.submitted_at });
+    if (!prev) {
+      best.set(s.question_id, { time: t, submitted_at: s.submitted_at });
+    } else if (t !== null && (prev.time === null || t < prev.time)) {
+      best.set(s.question_id, { time: t, submitted_at: s.submitted_at });
+    }
   }
 
-  const out = qList.map(q => {
-    const b = best.get(q.id);
-    return {
-      questionId: q.id,
-      title: q.title,
-      displayOrder: q.display_order,
-      timeSeconds: b?.time ?? null,
-      solvedAt: b?.submitted_at ?? null,
-    };
-  });
+  const out = qList
+    .map(q => {
+      const b = best.get(q.id);
+      const label = [q.type, q.topic].filter(Boolean).join(' / ') || q.id;
+      return {
+        questionId: q.id,
+        title: label,
+        displayOrder: q.display_order,
+        timeSeconds: b?.time ?? null,
+        solvedAt: b?.submitted_at ?? null,
+      };
+    });
 
   res.json(out);
 });

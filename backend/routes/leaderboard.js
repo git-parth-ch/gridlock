@@ -24,25 +24,26 @@ router.get('/leaderboard', async (req, res) => {
 
   const nowMs = Date.now();
 
-  // Add rank field
-  const ranked = (teams || []).map((team, i) => ({
+  // Compute real total time, then re-sort for accurate live ranking
+  const withRealTime = (teams || []).map(team => ({
     ...team,
-    rank: i + 1,
     total_time_seconds: (team.total_time_seconds || 0) + (
       team.status === 'active' && team.started_at
         ? Math.max(0, Math.floor((nowMs - new Date(team.started_at).getTime()) / 1000))
         : 0
     ),
-    // Format time nicely
-    timeFormatted: formatTime(
-      (team.total_time_seconds || 0) + (
-        team.status === 'active' && team.started_at
-          ? Math.max(0, Math.floor((nowMs - new Date(team.started_at).getTime()) / 1000))
-          : 0
-      )
-    ),
-    // Don't expose sensitive info
     coordinate_id: undefined,
+  }));
+
+  withRealTime.sort((a, b) => {
+    if (b.questions_solved !== a.questions_solved) return b.questions_solved - a.questions_solved;
+    return a.total_time_seconds - b.total_time_seconds;
+  });
+
+  const ranked = withRealTime.map((team, i) => ({
+    ...team,
+    rank: i + 1,
+    timeFormatted: formatTime(team.total_time_seconds),
   }));
 
   res.json(ranked);

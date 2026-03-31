@@ -148,7 +148,7 @@ export default function App() {
     };
   }, [updateQuestionStatus, addSegment, setSessionStatus, setViolationCount, setCoordinate, setAdminMessage, setOpenQuestion]);
 
-  // If a question is open, show the question view on top with ViolationMonitor
+  // If a question is open, show the question view on top
   if (openQuestion && sessionStatus !== 'frozen' && sessionStatus !== 'disqualified' && sessionStatus !== 'ended') return (
     <>
       <ViolationMonitor />
