@@ -47,6 +47,25 @@ router.post('/join', async (req, res) => {
 
   const code = teamCode.trim().toUpperCase();
 
+  // MOCK TEST LOGIN HANDLER
+  if (code === 'TEST01') {
+    return res.json({
+      team: { code: 'TEST01', name: 'Test Team Alpha', status: 'active', question_set_id: 'test_set_1' },
+      deviceId: 'test-device-uuid',
+      questions: [
+        {
+          id: 9991,
+          type: 'find_output',
+          topic: 'Diagnostics Output',
+          language: 'javascript',
+          status: 'open',
+          display_order: 1,
+          image_url: 'https://placehold.co/600x400/151515/f21d2f/png?text=ADD+10+AND+20+AND+PRINT+IT'
+        }
+      ]
+    });
+  }
+
   // Look up team
   const { data: team, error } = await supabase
     .from('teams')
@@ -131,6 +150,8 @@ router.post('/heartbeat', async (req, res) => {
   if (!teamCode || !deviceId) return res.status(400).json({ error: 'teamCode and deviceId are required' });
 
   const code = String(teamCode).trim().toUpperCase();
+  if (code === 'TEST01') return res.json({ ok: true });
+
   await supabase.from('devices')
     .update({ last_seen: new Date().toISOString() })
     .eq('id', deviceId)
@@ -146,6 +167,24 @@ router.post('/resume', async (req, res) => {
   if (!teamCode || !deviceId) return res.status(400).json({ error: 'teamCode and deviceId are required' });
 
   const code = String(teamCode).trim().toUpperCase();
+
+  if (code === 'TEST01') {
+    return res.json({
+      team: { code: 'TEST01', name: 'Test Team Alpha', status: 'active', question_set_id: 'test_set_1' },
+      deviceId: 'test-device-uuid',
+      questions: [
+        {
+          id: 9991,
+          type: 'find_output',
+          topic: 'Diagnostics Output',
+          language: 'javascript',
+          status: 'open',
+          display_order: 1,
+          image_url: 'https://placehold.co/600x400/151515/f21d2f/png?text=ADD+10+AND+20+AND+PRINT+IT'
+        }
+      ]
+    });
+  }
 
   await pruneStaleDevices(code);
 

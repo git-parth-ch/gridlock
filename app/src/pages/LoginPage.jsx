@@ -51,41 +51,45 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-black flex flex-col items-center justify-center p-8">
-      <div className="max-w-md w-full">
-        <h1 className="text-5xl font-bold text-white text-center tracking-widest mb-2">GRIDLOCK</h1>
-        <p className="text-gray-500 text-center text-xs uppercase tracking-widest mb-12">
-          GRIDLOCK - Codeathon
-        </p>
+    <div className="min-h-screen bg-elite-bg flex flex-col items-center justify-center p-8 font-inter">
+      <div className="max-w-md w-full bg-elite-card border-[1px] border-gray-800 p-10 relative">
+        <h1 className="text-4xl font-oswald text-gray-200 text-center tracking-widest mb-1">
+          ELITE_SYSTEM
+        </h1>
+        <div className="flex items-center justify-center gap-2 mb-10">
+          <div className="w-8 h-[1px] bg-elite-red"></div>
+          <span className="text-[10px] text-elite-textMuted uppercase tracking-widest font-bold">GRIDLOCK AUTH // SECTOR_01</span>
+          <div className="w-8 h-[1px] bg-elite-red"></div>
+        </div>
 
-        <label className="block text-gray-400 text-xs uppercase tracking-widest mb-2">
-          Team Code
+        <label className="block text-elite-textMuted text-[10px] uppercase font-bold tracking-widest mb-2">
+          TEAM DESIGNATION CODE
         </label>
+        
         <input
           type="text"
           value={teamCode}
           onChange={e => setCode(e.target.value.toUpperCase())}
           onKeyDown={e => e.key === 'Enter' && handleJoin()}
-          placeholder="GRIDLOCK-TEAM-XXX"
-          className="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-4 text-white text-lg
-                     font-mono tracking-widest focus:outline-none focus:border-gray-400 mb-4"
+          placeholder="ENTER AUTH KEY..."
+          className="w-full bg-[#1e1e1e] border-[1px] border-gray-700 px-4 py-3 text-white text-sm font-mono tracking-widest focus:outline-none focus:border-white mb-6 uppercase transition-all"
           autoFocus
         />
 
         {error && (
-          <p className="text-red-400 text-sm mb-4 text-center">{error}</p>
+          <p className="text-elite-red font-bold text-xs tracking-widest text-center mb-6 py-2 border-[1px] border-elite-red/30 bg-elite-red/10 uppercase">{error}</p>
         )}
 
         <button
           onClick={handleJoin}
           disabled={loading || !teamCode.trim()}
-          className={`w-full py-4 rounded-xl font-bold text-sm uppercase tracking-widest transition-all
-            ${loading || !teamCode.trim()
-              ? 'bg-gray-800 text-gray-600 cursor-not-allowed'
-              : 'bg-white text-black hover:bg-gray-200 cursor-pointer'
-            }`}
+          className={`w-full py-3 text-sm font-bold tracking-[0.2em] uppercase border-[1px] transition-all ${
+            loading || !teamCode.trim()
+              ? 'bg-transparent text-gray-600 border-gray-700 cursor-not-allowed'
+              : 'bg-white text-black border-white hover:bg-gray-200 hover:border-gray-200 cursor-pointer'
+          }`}
         >
-          {loading ? 'Connecting…' : 'Join Session'}
+          {loading ? 'AUTHENTICATING…' : 'AUTHORIZE_LINK'}
         </button>
       </div>
     </div>

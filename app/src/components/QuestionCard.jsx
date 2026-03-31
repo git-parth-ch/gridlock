@@ -38,44 +38,55 @@ export default function QuestionCard({ question, index }) {
   return (
     <div
       onClick={handleOpen}
-      className={`rounded-xl border p-5 flex flex-col gap-3 transition-all duration-200
+      className={`relative p-5 flex flex-col gap-3 transition-colors duration-200 border-[1px]
         ${question.status === 'solved'
-          ? 'border-green-900 bg-green-950/30 opacity-60 cursor-default'
+          ? 'border-gray-800 bg-elite-card opacity-50 cursor-default'
           : question.status === 'in_progress'
-          ? 'border-yellow-800 bg-yellow-950/20 cursor-pointer hover:border-yellow-600'
-          : 'border-gray-800 bg-gray-900 cursor-pointer hover:border-gray-600 hover:bg-gray-800'
+          ? 'border-elite-gold bg-[#151515] cursor-pointer'
+          : 'border-gray-800 bg-[#151515] cursor-pointer hover:bg-[#1a1a1a] hover:border-gray-600'
         }`}
     >
+      {question.status === 'in_progress' && (
+        <div className="absolute top-0 left-0 w-full h-[2px] bg-elite-gold"></div>
+      )}
+      {question.status === 'solved' && (
+        <div className="absolute top-0 left-0 w-full h-[2px] bg-gray-600"></div>
+      )}
+
       {/* Top row: number + status */}
-      <div className="flex items-center justify-between">
-        <span className="text-gray-500 text-xs font-mono">Q{index}</span>
-        <div className="flex items-center gap-1.5">
-          <span className={`w-2 h-2 rounded-full ${cfg.dot}`} />
-          <span className={`text-xs ${cfg.text}`}>{cfg.label}</span>
+      <div className="flex items-center justify-between border-b-[1px] border-gray-800 pb-2 mb-1">
+        <span className="text-gray-500 text-xl font-oswald tracking-widest leading-none">
+          {String(index).padStart(2,'0')}
+        </span>
+        <div className="flex items-center gap-2">
+          <span className={`w-2 h-2 rounded-sm ${cfg.dot === 'bg-blue-500' ? 'bg-gray-400' : cfg.dot === 'bg-yellow-400' ? 'bg-elite-gold' : 'bg-gray-600'}`} />
+          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-elite-textMuted">{cfg.label}</span>
         </div>
       </div>
 
       {/* Type + Topic */}
-      <div>
-        <p className="text-white font-medium text-sm">{TYPE_LABELS[question.type] || question.type}</p>
+      <div className="flex-1">
+        <p className={`font-inter font-bold text-sm tracking-widest uppercase ${question.status === 'solved' ? 'text-gray-500' : 'text-white'}`}>
+          {TYPE_LABELS[question.type] || question.type}
+        </p>
         {question.topic && (
-          <p className="text-gray-500 text-xs mt-0.5">{question.topic}</p>
+          <p className="text-elite-textMuted text-[10px] uppercase tracking-widest mt-1">{question.topic}</p>
         )}
       </div>
 
       {/* Language badge */}
-      <div className="mt-auto pt-2 border-t border-gray-800 flex items-center justify-between">
-        <span className={`text-xs font-mono px-2 py-0.5 rounded border ${LANG_COLORS[question.language] || 'text-gray-400 border-gray-700'}`}>
-          {question.language}
+      <div className="mt-2 text-[10px] tracking-widest flex items-center justify-between text-elite-textMuted font-mono">
+        <span className="uppercase">
+          [ {question.language} ]
         </span>
         {question.status !== 'solved' && (
-          <span className="text-gray-600 text-xs">
-            {question.status === 'in_progress' ? 'Teammate working…' : 'Click to open →'}
+          <span className="uppercase font-bold text-gray-400">
+            {question.status === 'in_progress' ? 'ACTIVE_LINK' : 'INITIALIZE →'}
           </span>
         )}
         {question.status === 'solved' && question.segmentValue && (
-          <span className="text-green-500 text-xs font-mono">
-            Segment: {question.segmentValue}
+          <span className="uppercase text-gray-500">
+            SEC_CODE: {question.segmentValue}
           </span>
         )}
       </div>

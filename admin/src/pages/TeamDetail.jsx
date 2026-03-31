@@ -40,95 +40,98 @@ export default function TeamDetail({
   };
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white">
-      <header className="bg-black border-b border-gray-800 px-6 py-4 flex items-center gap-4">
-        <button onClick={onBack} className="text-gray-500 hover:text-white text-sm transition-colors">
-          ← Back
+    <div className="min-h-screen bg-[#0a0a0a] font-inter text-gray-200">
+      <header className="bg-[#111] border-b-[2px] border-[#333] px-8 py-6 flex items-center gap-4 relative z-20">
+        <button onClick={onBack} className="bg-transparent text-elite-red px-3 py-1 font-bold tracking-widest text-xs border-[2px] border-elite-red hover:bg-[#b0101f] hover:text-white hover:border-[#b0101f] transition-all uppercase">
+          ← RETURN
         </button>
-        <span className="text-gray-700">|</span>
-        <h2 className="text-white font-bold font-mono">{teamCode}</h2>
+        <div className="h-6 w-[2px] bg-gray-700"></div>
+        <h2 className="text-white font-oswald text-4xl tracking-widest leading-none">
+          {teamCode.replace('GRIDLOCK-', 'TEAM_')}
+        </h2>
       </header>
 
-      <div className="p-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="p-8 max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8 relative z-10">
         {/* Controls */}
-        <div className="bg-gray-900 rounded-xl border border-gray-800 p-5">
-          <h3 className="text-gray-400 text-xs uppercase tracking-widest mb-4">Controls</h3>
-          <div className="flex flex-wrap gap-3">
-            <Btn color="green"  onClick={() => onUnfreeze(teamCode, true)}   label="🔓 Unfreeze (reset count)" />
-            <Btn color="yellow" onClick={() => onUnfreeze(teamCode, false)}  label="⚠️ Unfreeze (keep count)" />
-            <Btn color="red"    onClick={() => onFreeze(teamCode)}           label="🔒 Freeze" />
-            <Btn color="gray"   onClick={() => onDisqualify(teamCode)}       label="🚫 Disqualify" />
-            <Btn color="gray"   onClick={() => onLogout?.(teamCode)}        label="⏏ Log out device" />
+        <div className="bg-[#151515] border-[2px] border-[#333] p-6">
+          <h3 className="text-white font-oswald text-2xl tracking-widest mb-6 inline-block border-b-[2px] border-elite-red pr-8 pb-1">COMMAND_MODULE</h3>
+          <div className="flex flex-wrap gap-2">
+            <Btn onClick={() => onUnfreeze(teamCode, true)}   label="UNFREEZE (RESET)" />
+            <Btn onClick={() => onUnfreeze(teamCode, false)}  label="UNFREEZE (KEEP)" />
+            <Btn onClick={() => onFreeze(teamCode)}           label="FREEZE TEAM" />
+            <Btn onClick={() => onDisqualify(teamCode)}       label="SUSPEND TEAM" />
+            <Btn onClick={() => onLogout?.(teamCode)}        label="LOGOUT DEVICE" />
           </div>
         </div>
 
         {/* Question times */}
-        <div className="bg-gray-900 rounded-xl border border-gray-800 p-5">
-          <h3 className="text-gray-400 text-xs uppercase tracking-widest mb-4">Question Times</h3>
+        {/* Question times */}
+        <div className="bg-[#151515] border-[2px] border-[#333] p-6">
+          <h3 className="text-white font-oswald text-2xl tracking-widest mb-6 inline-block border-b-[2px] border-[#3b82f6] pr-8 pb-1">MISSION_LOG</h3>
           {(!questionTimes || questionTimes.length === 0) ? (
-            <p className="text-gray-600 text-sm">No solved questions yet.</p>
+            <p className="text-gray-500 font-mono text-xs uppercase tracking-widest">No completed missions.</p>
           ) : (
-            <div className="max-h-72 overflow-y-auto rounded-lg border border-gray-800">
-              <div className="grid grid-cols-[60px_1fr_120px] bg-gray-950 px-3 py-2 text-[11px] text-gray-500 uppercase tracking-widest">
-                <span>#</span>
-                <span>Question</span>
-                <span>Time</span>
+            <div className="max-h-72 overflow-y-auto border-[1px] border-[#333] bg-[#0a0a0a]">
+              <div className="grid grid-cols-[60px_1fr_120px] bg-[#111] px-4 py-3 font-mono text-[10px] text-gray-400 tracking-widest uppercase border-b-[1px] border-[#333]">
+                <span>RNK</span>
+                <span>MISSION_ID</span>
+                <span>SYS_TIME</span>
               </div>
               {questionTimes.map((q) => (
-                <div key={q.questionId} className="grid grid-cols-[60px_1fr_120px] px-3 py-2 border-t border-gray-800 text-sm">
-                  <span className="text-gray-500 font-mono">{q.displayOrder}</span>
-                  <span className="text-gray-200 truncate">{q.title || q.questionId}</span>
-                  <span className="text-gray-300 font-mono">
+                <div key={q.questionId} className="grid grid-cols-[60px_1fr_120px] px-4 py-3 border-b-[1px] border-[#222] text-xs font-mono items-center hover:bg-[#1a1a1a]">
+                  <span className="text-elite-red font-bold">{String(q.displayOrder).padStart(2,'0')}</span>
+                  <span className="text-gray-300 truncate pr-4">{q.title || q.questionId}</span>
+                  <span className="text-gray-400">
                     {typeof q.timeSeconds === 'number' ? formatMMSS(q.timeSeconds) : '—'}
                   </span>
                 </div>
               ))}
             </div>
           )}
-          <p className="text-gray-600 text-[11px] mt-2">
-            Time is recorded at the moment of the first correct submission per question (from the team’s event clock).
-          </p>
         </div>
 
         {/* Message */}
-        <div className="bg-gray-900 rounded-xl border border-gray-800 p-5">
-          <h3 className="text-gray-400 text-xs uppercase tracking-widest mb-4">📡 Push Message to Team</h3>
-          <div className="flex gap-3">
+        <div className="bg-[#151515] border-[2px] border-[#333] p-6">
+          <h3 className="text-white font-oswald text-2xl tracking-widest mb-6 inline-block border-b-[2px] border-[#10b981] pr-8 pb-1">ZORDON_TRANSMISSION</h3>
+          <div className="flex gap-2">
             <input
               type="text"
               value={msg}
               onChange={e => setMsg(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && sendMsg()}
-              placeholder="Message shown on all team devices…"
-              className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm
-                         focus:outline-none focus:border-gray-500"
+              placeholder="BROADCAST MESSAGE..."
+              className="flex-1 bg-black border-[1px] border-gray-700 px-4 py-2 text-white font-mono text-sm uppercase tracking-widest focus:outline-none focus:border-elite-red"
             />
             <button
               onClick={sendMsg}
-              className="px-4 py-2 bg-white text-black rounded-lg text-sm font-medium hover:bg-gray-200"
+              className="px-6 py-2 bg-elite-red text-white uppercase font-black text-[10px] tracking-widest border-[2px] border-elite-red hover:bg-[#b0101f] transition-all"
             >
-              Send
+              TRANSMIT
             </button>
           </div>
         </div>
 
         {/* Violation log */}
-        <div className="lg:col-span-2 bg-gray-900 rounded-xl border border-gray-800 p-5">
-          <h3 className="text-gray-400 text-xs uppercase tracking-widest mb-4">
-            Violation Log ({violations.length})
+        <div className="lg:col-span-2 bg-[#151515] border-[2px] border-[#333] p-6">
+          <h3 className="text-white font-oswald text-2xl tracking-widest mb-6 inline-block border-b-[2px] border-[#eab308] pr-8 pb-1">
+            INFRACTION_LOG // {violations.length}
           </h3>
           {violations.length === 0 ? (
-            <p className="text-gray-600 text-sm">No violations recorded.</p>
+            <p className="text-gray-500 font-mono text-xs uppercase tracking-widest">NO INFRACTIONS DETECTED.</p>
           ) : (
-            <div className="space-y-2 max-h-96 overflow-y-auto">
+            <div className="space-y-2 max-h-96 overflow-y-auto pr-4">
               {violations.map(v => (
-                <div key={v.id} className={`flex items-center gap-4 px-4 py-2.5 rounded-lg text-sm ${SEV_COLOR[v.severity]}`}>
-                  <span className="font-mono text-xs opacity-60">
-                    {new Date(v.occurred_at).toLocaleTimeString()}
+                <div key={v.id} className="flex items-center gap-4 bg-[#0a0a0a] border-[1px] border-[#333] px-4 py-3 hover:border-gray-500 transition-colors">
+                  <span className="font-mono text-gray-500 text-[10px] tracking-widest min-w-[60px]">
+                    {new Date(v.occurred_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                   </span>
-                  <span className="text-xs px-2 py-0.5 rounded border border-current opacity-80">{v.severity}</span>
-                  <span className="font-medium">{v.type.replace(/_/g, ' ')}</span>
-                  <span className="text-xs opacity-50 ml-auto font-mono">{v.device_id?.slice(0, 8)}…</span>
+                  
+                  {v.severity === 'FLAG' && <span className="text-white bg-elite-red font-bold text-[10px] tracking-widest px-2 py-0.5 uppercase">FLAG</span>}
+                  {v.severity === 'WARNING' && <span className="text-black bg-[#eab308] font-bold text-[10px] tracking-widest px-2 py-0.5 uppercase">WARN</span>}
+                  {v.severity === 'INFO' && <span className="text-white bg-[#3b82f6] font-bold text-[10px] tracking-widest px-2 py-0.5 uppercase">INFO</span>}
+
+                  <span className="font-bold text-xs uppercase tracking-widest text-gray-300">{v.type.replace(/_/g, ' ')}</span>
+                  <span className="text-gray-600 px-2 py-0.5 text-[10px] font-mono ml-auto">[{v.device_id?.slice(0, 8)}]</span>
                 </div>
               ))}
             </div>
@@ -146,16 +149,10 @@ function formatMMSS(seconds) {
   return `${mm}:${ss}`;
 }
 
-function Btn({ color, onClick, label }) {
-  const c = {
-    green:  'border-green-800 text-green-400 hover:bg-green-900/40',
-    yellow: 'border-yellow-800 text-yellow-400 hover:bg-yellow-900/40',
-    red:    'border-red-800 text-red-400 hover:bg-red-900/40',
-    gray:   'border-gray-700 text-gray-400 hover:bg-gray-800',
-  };
+function Btn({ onClick, label }) {
   return (
     <button onClick={onClick}
-      className={`px-4 py-2 rounded-lg border text-sm font-medium transition-all ${c[color]}`}>
+      className={`px-3 py-1.5 border-[2px] border-elite-red bg-elite-red text-white font-black tracking-[0.1em] text-[10px] uppercase transition-all hover:bg-[#b0101f] whitespace-nowrap`}>
       {label}
     </button>
   );

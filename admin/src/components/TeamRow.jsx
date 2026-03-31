@@ -1,66 +1,81 @@
 // admin/src/components/TeamRow.jsx
 export default function TeamRow({
-  team, rank, statusColor, onView, onFreeze, onUnfreeze, onDisqualify, onReveal
+  team, rank, statusColor, onView, onFreeze, onUnfreeze, onDisqualify, onReveal, isPodium = false, isSmall = false
 }) {
-  const mm = String(Math.floor(team.total_time_seconds / 60)).padStart(2, '0');
-  const ss = String(team.total_time_seconds % 60).padStart(2, '0');
+  const fmtRank = String(rank).padStart(2, '0');
+  const points = team.questions_solved * 100;
+
+  const rankColor = rank === 1 ? 'text-elite-red' : rank === 2 ? 'text-[#eab308]' : rank === 3 ? 'text-[#eab308]' : 'text-white';
+  
+  if (isPodium) {
+    return (
+      <div className={`flex flex-col justify-end bg-[#0a0a0a] px-8 pb-6 border-[2px] border-[#333] flex-1 relative ${rank === 1 ? 'md:flex-[1.2]' : ''}`}>
+        <div className="absolute inset-0 bg-gradient-to-t from-[#111] to-transparent"></div>
+        {rank === 1 && <div className="absolute top-4 right-4"><span className="text-elite-red font-bold text-xl">LEADER</span></div>}
+        <div className="relative z-10">
+          <span className={`font-oswald text-6xl leading-none ${rankColor}`}>{fmtRank}</span>
+          <h3 className="font-inter font-black text-white text-2xl tracking-widest uppercase mt-2 mb-4">
+            {team.name || `TEAM_${team.code}`}
+          </h3>
+          <div className="flex justify-between items-end mb-4">
+            <div>
+              <div className="text-[10px] text-gray-400 uppercase tracking-widest mb-1 font-bold">POINTS</div>
+              <div className="text-white font-mono text-xl font-bold">{points.toLocaleString()}</div>
+            </div>
+            <div>
+              <div className="text-[10px] text-gray-400 uppercase tracking-widest mb-1 font-bold">VIOLATIONS</div>
+              <div className="text-elite-red font-bold text-xl text-right">{team.violations?.F ?? 0}</div>
+            </div>
+          </div>
+          <div className="text-[10px] bg-white text-black tracking-widest font-bold px-2 py-0.5 inline-block mb-4 uppercase">
+            STATUS: {team.status}
+          </div>
+          {/* Admin Controls Overlay */}
+          <div className="flex flex-wrap gap-2 mt-auto">
+            <ActionBtn onClick={onView} label="VIEW TEAM" />
+            {team.status === 'active' && <ActionBtn onClick={onFreeze} label="FREEZE TEAM" />}
+            {team.status === 'frozen' && <ActionBtn onClick={() => onUnfreeze(true)} label="UNFREEZE TEAM" />}
+            {team.status !== 'disqualified' && <ActionBtn onClick={onDisqualify} label="SUSPEND TEAM" />}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="grid grid-cols-[48px_1fr_64px_80px_80px_100px_120px_140px]
-                    px-4 py-3 border-b border-gray-800/50 hover:bg-gray-900/50 items-center text-sm">
-      <span className="text-gray-500 font-mono">{rank}</span>
-
-      <div>
-        <p className="text-white font-medium font-mono text-xs">{team.code.replace('GRIDLOCK-', '')}</p>
-        <p className="text-gray-600 text-xs">{team.devices_connected} device{team.devices_connected !== 1 ? 's' : ''}</p>
+    <div className={`flex items-center bg-[#0a0a0a] border-[2px] border-[#333] ${isSmall ? 'p-3' : 'px-6 py-4'} justify-between hover:border-elite-red transition-all`}>
+      <div className="flex items-center gap-6 w-1/4">
+        <span className={`font-oswald ${isSmall ? 'text-xl' : 'text-3xl'} leading-none text-gray-400`}>{fmtRank}</span>
+        <div className="flex flex-col">
+          <h4 className={`text-white font-black tracking-widest uppercase ${isSmall ? 'text-xs' : 'text-base'}`}>{team.name || `TEAM_${team.code}`}</h4>
+        </div>
       </div>
+      
+      {!isSmall && (
+        <div className="hidden md:flex gap-12 w-1/4 text-white font-mono font-bold text-sm items-center">
+          <div className="flex flex-col"><span className="text-[8px] text-gray-500 tracking-widest">POINTS</span>{points}</div>
+          <div className="flex flex-col text-elite-red"><span className="text-[8px] text-gray-500 tracking-widest">VIOLATIONS</span>{team.violations?.F ?? 0}</div>
+          <div className="bg-white text-black px-2 py-0.5 text-[10px] tracking-widest uppercase">{team.status}</div>
+        </div>
+      )}
+      {isSmall && <span className="text-gray-300 text-[10px] font-mono font-bold">{points} PTS</span>}
 
-      <span className="text-gray-400 font-mono text-xs">{team.question_set_id}</span>
-
-      <span className="text-white font-mono">
-        {team.questions_solved}
-        <span className="text-gray-600 text-xs">/8</span>
-      </span>
-
-      <span className="text-gray-300 font-mono text-xs">{mm}:{ss}</span>
-
-      <span className="text-xs">
-        <span className="text-yellow-400">W:{team.violations?.W ?? 0}</span>
-        {' '}
-        <span className="text-red-400">F:{team.violations?.F ?? 0}</span>
-      </span>
-
-      <span className={`text-xs font-medium ${statusColor}`}>
-        {team.status.charAt(0).toUpperCase() + team.status.slice(1)}
-      </span>
-
-      <div className="flex gap-1.5 justify-end">
-        <ActionBtn onClick={onView} label="View" color="gray" />
-        {team.status === 'active' && (
-          <ActionBtn onClick={onFreeze} label="Freeze" color="red" />
-        )}
-        {team.status === 'frozen' && (
-          <ActionBtn onClick={() => onUnfreeze(true)} label="Unfreeze" color="green" />
-        )}
-        {team.status !== 'disqualified' && (
-          <ActionBtn onClick={onReveal} label="Reveal" color="yellow" />
-        )}
+      {/* Admin Controls inline */}
+      <div className="flex flex-wrap gap-2 justify-end w-1/2">
+        <ActionBtn onClick={onView} label="VIEW" />
+        {team.status === 'active' && <ActionBtn onClick={onFreeze} label="FREEZE TEAM" />}
+        {team.status === 'frozen' && <ActionBtn onClick={() => onUnfreeze(true)} label="UNFREEZE TEAM" />}
+        {team.status !== 'disqualified' && <ActionBtn onClick={onDisqualify} label="SUSPEND TEAM" />}
       </div>
     </div>
   );
 }
 
-function ActionBtn({ onClick, label, color }) {
-  const c = {
-    gray:   'text-gray-400 hover:text-white border-gray-700 hover:border-gray-500',
-    red:    'text-red-400 hover:text-red-300 border-red-900 hover:border-red-700',
-    green:  'text-green-400 hover:text-green-300 border-green-900 hover:border-green-700',
-    yellow: 'text-yellow-400 hover:text-yellow-300 border-yellow-900 hover:border-yellow-700',
-  };
+function ActionBtn({ onClick, label }) {
   return (
     <button
       onClick={onClick}
-      className={`px-2 py-0.5 rounded border text-xs transition-all ${c[color]}`}
+      className={`px-3 py-1.5 text-[10px] font-black uppercase tracking-widest bg-elite-red text-white border-[2px] border-elite-red hover:bg-[#b0101f] transition-all whitespace-nowrap`}
     >
       {label}
     </button>

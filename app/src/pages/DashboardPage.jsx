@@ -33,34 +33,39 @@ export default function DashboardPage() {
   const total      = questions.length;
 
   return (
-    <div className="min-h-screen bg-gray-950 flex flex-col">
+    <div className="min-h-screen bg-elite-bg flex flex-col font-inter text-elite-dark pb-24">
       {/* Header */}
-      <header className="bg-black border-b border-gray-800 px-6 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <span className="text-white font-bold tracking-widest">GRIDLOCK</span>
-          <span className="text-gray-500 text-sm font-mono">{team?.code}</span>
+      <header className="bg-elite-bg border-b-[1px] border-gray-200 px-8 py-6 flex items-end justify-between relative z-20">
+        <div>
+          <h1 className="text-4xl font-oswald text-gray-200 tracking-tighter leading-none mb-1">GRIDLOCK_TERMINAL</h1>
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-[2px] bg-elite-red"></div>
+            <p className="text-elite-textMuted text-[10px] tracking-[0.2em] font-bold uppercase">
+              TEAM // {team?.code}
+            </p>
+          </div>
         </div>
-        <div className="flex items-center gap-6">
-          <span className="text-gray-400 text-sm">
-            {solved}/{total} solved
-          </span>
-          <ViolationBadge />
-          <div className="flex flex-col items-end gap-0.5">
-            <div className="flex items-center gap-2 text-xs text-gray-500">
-              <span>Event:</span>
-              <Timer startedAt={team?.started_at} />
+        
+        <div className="flex flex-wrap items-end gap-8 mt-2 sm:mt-0">
+          <div className="flex flex-col items-end">
+            <span className="text-[10px] text-elite-textMuted uppercase tracking-widest font-bold mb-1">PROGRESS</span>
+            <span className="font-mono text-sm tracking-widest">{String(solved).padStart(2,'0')} / {String(total).padStart(2,'0')}</span>
+          </div>
+          <div className="flex flex-col items-end gap-1">
+            <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest font-bold">
+              <span className="text-elite-textMuted">SYS_TIME</span>
+              <span className="text-elite-dark"><Timer startedAt={team?.started_at} /></span>
             </div>
-            <div className="flex items-center gap-2 text-xs text-gray-500">
-              <span>You:</span>
-              <DeviceTimer />
+            <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest font-bold">
+              <span className="text-elite-textMuted">TKN_TIME</span>
+              <span className="text-elite-dark"><DeviceTimer /></span>
             </div>
           </div>
           <button
             onClick={logout}
-            className="px-4 py-2 rounded-lg border border-gray-700 text-sm font-medium
-                       text-red-200 hover:bg-gray-900/60 transition-colors"
+            className="px-4 py-2 border-[1px] border-gray-300 text-[10px] font-bold tracking-[0.1em] uppercase hover:bg-gray-100 transition-colors"
           >
-            Logout
+            DISCONNECT
           </button>
         </div>
       </header>
@@ -80,59 +85,67 @@ export default function DashboardPage() {
 
 function EventEndedScreen({ onLogout }) {
   return (
-    <div className="min-h-screen bg-purple-950 flex flex-col items-center justify-center p-8">
-      <h2 className="text-3xl font-bold text-purple-200 mb-4">Event Ended</h2>
-      <p className="text-purple-200/70 text-center max-w-sm">
-        The organizer ended the event. Please check the final leaderboard with the host.
-      </p>
-      {onLogout && (
-        <button
-          onClick={onLogout}
-          className="mt-8 px-4 py-2 rounded-lg border border-purple-900 text-sm font-medium
-                     text-purple-100 hover:bg-purple-900/40 transition-colors"
-        >
-          Logout
-        </button>
-      )}
+    <div className="min-h-screen bg-elite-bg flex flex-col items-center justify-center p-8 font-inter">
+      <div className="max-w-md w-full border-[1px] border-gray-200 p-10 text-center relative bg-white">
+        <div className="absolute top-0 left-0 w-full h-[2px] bg-elite-red"></div>
+        <h2 className="text-4xl font-oswald text-gray-200 tracking-widest mb-4">TERMINATED</h2>
+        <p className="text-elite-textMuted text-[11px] uppercase tracking-[0.2em] font-bold mb-8">
+          The operation has been concluded. Final telemetry synced to HQ.
+        </p>
+        {onLogout && (
+          <button
+            onClick={onLogout}
+            className="w-full py-3 bg-white text-black border-[1px] border-gray-300 text-xs font-bold tracking-[0.2em] uppercase hover:bg-gray-100 transition-all"
+          >
+            DISCONNECT_LINK
+          </button>
+        )}
+      </div>
     </div>
   );
 }
 
 function WaitingRoom({ teamCode, onLogout }) {
   return (
-    <div className="min-h-screen bg-black flex flex-col items-center justify-center">
-      <h1 className="text-4xl font-bold text-white tracking-widest mb-4">GRIDLOCK</h1>
-      <p className="text-gray-400 mb-2">Team: <span className="text-white font-mono">{teamCode}</span></p>
-      <p className="text-gray-500 text-sm animate-pulse">Waiting for organizer to start the event…</p>
-      {onLogout && (
-        <button
-          onClick={onLogout}
-          className="mt-8 px-4 py-2 rounded-lg border border-gray-700 text-sm font-medium
-                     text-red-200 hover:bg-gray-900/60 transition-colors"
-        >
-          Logout
-        </button>
-      )}
+    <div className="min-h-screen bg-elite-bg flex flex-col items-center justify-center p-8 font-inter">
+      <div className="max-w-md w-full border-[1px] border-gray-200 p-10 text-center relative bg-white">
+        <div className="absolute top-0 left-0 w-full h-[2px] bg-elite-gold"></div>
+        <h1 className="text-4xl font-oswald text-gray-200 tracking-widest mb-4">STANDBY...</h1>
+        <p className="text-elite-dark font-bold text-xs uppercase tracking-[0.1em] mb-4">SQUAD_ID // <span className="font-mono">{teamCode}</span></p>
+        <div className="text-elite-textMuted text-[10px] uppercase font-bold tracking-widest mb-8 border-[1px] border-gray-200 p-3 bg-gray-50 animate-pulse">
+          AWAITING_MASTER_OVERRIDE
+        </div>
+        {onLogout && (
+          <button
+            onClick={onLogout}
+            className="w-full py-3 bg-white text-black border-[1px] border-gray-300 text-xs font-bold tracking-[0.2em] uppercase hover:bg-gray-100 transition-all"
+          >
+            ABORT_STANDBY
+          </button>
+        )}
+      </div>
     </div>
   );
 }
 
 function DisqualifiedScreen({ onLogout }) {
   return (
-    <div className="min-h-screen bg-red-950 flex flex-col items-center justify-center p-8">
-      <h2 className="text-3xl font-bold text-red-300 mb-4">Session Disqualified</h2>
-      <p className="text-red-400 text-center max-w-sm">
-        Your team has been disqualified. Please see an organizer.
-      </p>
-      {onLogout && (
-        <button
-          onClick={onLogout}
-          className="mt-8 px-4 py-2 rounded-lg border border-red-900 text-sm font-medium
-                     text-red-200 hover:bg-red-900/40 transition-colors"
-        >
-          Logout
-        </button>
-      )}
+    <div className="min-h-screen bg-elite-dark flex flex-col items-center justify-center p-8 font-inter">
+      <div className="max-w-md w-full border-[1px] border-elite-red/30 p-10 text-center relative bg-elite-card">
+        <div className="absolute top-0 left-0 w-full h-[2px] bg-elite-red"></div>
+        <h2 className="text-4xl font-oswald text-elite-red tracking-widest mb-4">DISQUALIFIED</h2>
+        <p className="text-gray-400 text-[11px] uppercase tracking-[0.2em] font-bold mb-8">
+          Your authorization has been permanently revoked due to protocol violations.
+        </p>
+        {onLogout && (
+          <button
+            onClick={onLogout}
+            className="w-full py-3 bg-transparent text-white border-[1px] border-white hover:bg-white hover:text-black text-xs font-bold tracking-[0.2em] uppercase transition-all"
+          >
+            ACKNOWLEDGE
+          </button>
+        )}
+      </div>
     </div>
   );
 }

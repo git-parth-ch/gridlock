@@ -33,6 +33,16 @@ router.post('/', async (req, res) => {
 
     const code = teamCode.trim().toUpperCase();
 
+    // MOCK SUBMISSION HANDLER
+    if (code === 'TEST01' && String(questionId) === '9991') {
+      const isCorrect = answer.trim() === '30';
+      return res.json({
+        isCorrect,
+        segmentValue: isCorrect ? 999 : null,
+        coordinateSegment: isCorrect ? '[[0,0],[1,1]]' : null,
+      });
+    }
+
     // Look up the question to check the correct answer (stored as bcrypt hash in DB)
     const { data: question, error: qErr } = await supabase
       .from('questions')
