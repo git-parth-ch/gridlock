@@ -50,6 +50,7 @@ export default function Leaderboard() {
 
     socket.on('event_started', () => setEventStatus('active'));
     socket.on('event_ended', () => setEventStatus('ended'));
+    socket.on('event_restarted', () => setEventStatus('waiting'));
 
     return () => socket.disconnect();
   }, []);

@@ -178,6 +178,33 @@ router.post('/reopen', adminAuth, async (req, res) => {
   res.json({ ok: true });
 });
 
+// POST /api/admin/restart   – fully restart the event, clearing progress
+router.post('/restart', adminAuth, async (req, res) => {
+  // Clear all submissions, violations, and connected devices safely
+  await supabase.from('submissions').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+  await supabase.from('violations').delete().neq('id', 0);
+  await supabase.from('devices').delete().neq('team_code', 'INVALID_CODE_HACK');
+
+  // Reset all teams back to 'waiting' with 0 progress
+  await supabase.from('teams')
+    .update({ 
+      status: 'waiting', 
+      started_at: null, 
+      total_time_seconds: 0, 
+      questions_solved: 0, 
+      devices_connected: 0,
+      coordinate_revealed: false 
+    })
+    .neq('code', 'INVALID_CODE_HACK');
+
+  // 1. Kick everyone back to login screen.
+  req.app.locals.io?.emit('force_logout', { reason: 'event_restarted' });
+  // 2. Tell projector leaderboard to go to 'waiting'.
+  req.app.locals.io?.emit('event_restarted', {});
+  
+  res.json({ ok: true });
+});
+
 // POST /api/admin/reveal/:code    – reveal coordinate to team
 router.post('/reveal/:code', adminAuth, async (req, res) => {
   await supabase.from('teams')

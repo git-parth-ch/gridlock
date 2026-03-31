@@ -70,6 +70,13 @@ export default function AdminDashboard() {
     setEventEnded(false);
     fetchLeaderboard();
   };
+  const restartEvent  = async () => {
+    if (!confirm('RESTART EVENT? This will instantly WIPE all progress, times, and violations for all teams, resetting everything to 0. This cannot be undone!')) return;
+    await api('post', '/api/admin/restart');
+    // We emit 'event_restarted' on backend so no need to emit here, but we fetch new lb
+    setEventEnded(false);
+    fetchLeaderboard();
+  };
 
   const handleUnfreeze   = async (code, reset) => {
     await api('post', `/api/admin/unfreeze/${code}`, { resetCount: reset });
@@ -149,6 +156,7 @@ export default function AdminDashboard() {
         <CtrlBtn color="yellow" onClick={pauseAll}    label="⏸ Pause All" disabled={eventEnded} />
         <CtrlBtn color="blue"   onClick={unfreezeAll} label="🔓 Unfreeze All" disabled={eventEnded} />
         <CtrlBtn color="purple" onClick={reopenEvent} label="↻ Re-open Event" disabled={!eventEnded} />
+        <CtrlBtn color="red"    onClick={restartEvent} label="↺ Restart Event" />
         <CtrlBtn color="red"    onClick={endEvent}    label="⏹ End Event" />
         <span className="ml-auto text-gray-600 text-sm self-center">
           {teams.length} teams · {teams.filter(t => t.status === 'active').length} active ·{' '}
