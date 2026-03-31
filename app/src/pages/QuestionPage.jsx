@@ -10,12 +10,6 @@ import ViolationBadge from '../components/ViolationBadge';
 const BACKEND = import.meta.env.VITE_BACKEND_URL || 'http://localhost:4000';
 const HTTP_TIMEOUT_MS = 30000;
 
-const PISTON_LANG = {
-  python: { language: 'python', version: '3.10.0' },
-  java:   { language: 'java', version: '15.0.2' },
-  cpp:    { language: 'c++', version: '10.2.0' },
-};
-
 const LANG_ID = { python: 'python', java: 'java', cpp: 'cpp' };
 
 const DEFAULT_CODE = {
@@ -70,47 +64,33 @@ export default function QuestionPage() {
     if (!question) return;
     setRunning(true);
     setOutput('Running…');
-    const pistonLang = PISTON_LANG[lang];
     try {
       const res = await axios.post(
-        `${BACKEND}/api/piston/execute`,
-        {
-          language: pistonLang.language,
-          version: pistonLang.version,
-          files: [{ name: lang === 'java' ? 'Main.java' : 'main', content: code }],
-          stdin: '',
-        },
-        { timeout: HTTP_TIMEOUT_MS, validateStatus: () => true }
+        `${BACKEND}/api/execute`,
+        { code, language: lang },
+        { timeout: HTTP_TIMEOUT_MS }
       );
-      if (res.status !== 200) {
-        const m =
-          res.data?.message ||
-          res.data?.error ||
-          (typeof res.data === 'string' ? res.data : JSON.stringify(res.data));
-        setOutput(
-          `Execution failed (${res.status}): ${m}\n\n` +
-            'Tip: public EMKC Piston is often blocked (401/403). Host your own Piston and set PISTON_URL in backend/.env to its /api/v2/piston base URL.'
-        );
-        return;
+      const d = res.data;
+      if (d.compile_output) {
+        setOutput(`Compile error:\n${d.compile_output}`);
+      } else if (d.stderr && d.stderr.trim()) {
+        setOutput(`Error:\n${d.stderr}`);
+      } else if (d.stdout && d.stdout.trim()) {
+        setOutput(d.stdout.trim());
+      } else {
+        setOutput(d.status || 'No output');
       }
-      const data = res.data;
-      const out =
-        data.run?.stdout ||
-        data.run?.stderr ||
-        data.run?.output ||
-        (typeof data.run === 'string' ? data.run : '') ||
-        'No output';
-      setOutput(String(out).trim() || 'No output');
     } catch (e) {
       const msg =
         e.code === 'ECONNABORTED'
           ? 'Request timed out — is the backend running?'
-          : e.response?.data?.message || e.response?.data?.error || e.message || 'Request failed';
+          : e.response?.data?.error || e.message || 'Request failed';
       setOutput(`Execution failed: ${msg}`);
     } finally {
       setRunning(false);
     }
   }, [code, lang, question]);
+
 
   const submitAnswer = useCallback(async () => {
     if (!answer.trim() || !question || !team?.code) return;
@@ -129,6 +109,8 @@ export default function QuestionPage() {
         { timeout: HTTP_TIMEOUT_MS }
       );
 
+      console.log('[submitAnswer] Response:', data);
+
       if (data.isCorrect) {
         setFeedback('correct');
         updateQuestionStatus(question.id, 'solved', { segmentValue: data.segmentValue });
@@ -145,6 +127,7 @@ export default function QuestionPage() {
         setFeedback('wrong');
       }
     } catch (e) {
+      console.error('[submitAnswer] Error:', e);
       setFeedback('error');
       const detail =
         e.code === 'ECONNABORTED'
