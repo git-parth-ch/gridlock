@@ -20,6 +20,7 @@ export default function App() {
     setTeam, setQuestions, setSessionStatus, resetSession,
     updateQuestionStatus, addSegment, setViolationCount, setCoordinate, setAdminMessage,
     setConnectionStatus,
+    setOpenQuestion,
   } = useStore();
 
   const heartbeatId = useRef(null);
@@ -52,6 +53,7 @@ export default function App() {
             data.team.status === 'active' ? 'active' :
             data.team.status === 'frozen' ? 'frozen' :
             data.team.status === 'disqualified' ? 'disqualified' :
+            data.team.status === 'ended' ? 'ended' :
             'waiting'
           );
         } catch (_) {
@@ -117,6 +119,10 @@ export default function App() {
       setCoordinate(coordinate);
       setSessionStatus('ended');
     };
+    const onEnded = () => {
+      setOpenQuestion(null);
+      setSessionStatus('ended');
+    };
     const onAdminMessage = ({ message }) => setAdminMessage(message);
 
     socket.on('question_status_update', onQuestionUpdate);
@@ -124,6 +130,7 @@ export default function App() {
     socket.on('session_unfrozen', onUnfrozen);
     socket.on('disqualified', onDisqualified);
     socket.on('event_started', onStarted);
+    socket.on('event_ended', onEnded);
     socket.on('violation_count', onViolationCount);
     socket.on('coordinate_revealed', onCoordinate);
     socket.on('admin_message', onAdminMessage);
@@ -134,11 +141,12 @@ export default function App() {
       socket.off('session_unfrozen', onUnfrozen);
       socket.off('disqualified', onDisqualified);
       socket.off('event_started', onStarted);
+      socket.off('event_ended', onEnded);
       socket.off('violation_count', onViolationCount);
       socket.off('coordinate_revealed', onCoordinate);
       socket.off('admin_message', onAdminMessage);
     };
-  }, [updateQuestionStatus, addSegment, setSessionStatus, setViolationCount, setCoordinate, setAdminMessage]);
+  }, [updateQuestionStatus, addSegment, setSessionStatus, setViolationCount, setCoordinate, setAdminMessage, setOpenQuestion]);
 
   // If a question is open, show the question view on top with ViolationMonitor
   if (openQuestion && sessionStatus !== 'frozen' && sessionStatus !== 'disqualified' && sessionStatus !== 'ended') return (

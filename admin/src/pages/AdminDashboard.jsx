@@ -20,11 +20,13 @@ export default function AdminDashboard() {
   const [selected,   setSelected]   = useState(null); // team code for detail view
   const [loading,    setLoading]    = useState(true);
   const [lastUpdate, setLastUpdate] = useState(null);
+  const [eventEnded, setEventEnded] = useState(false);
 
   const fetchLeaderboard = useCallback(async () => {
     try {
       const { data } = await api('get', '/api/admin/leaderboard');
       setTeams(data);
+      setEventEnded((data || []).length > 0 && (data || []).every(t => t.status === 'ended'));
       setLastUpdate(new Date());
     } catch (e) {
       if (e.response?.status === 401) {
@@ -39,9 +41,10 @@ export default function AdminDashboard() {
   // Auto-refresh every 5 s
   useEffect(() => {
     fetchLeaderboard();
+    if (eventEnded) return;
     const id = setInterval(fetchLeaderboard, 5000);
     return () => clearInterval(id);
-  }, [fetchLeaderboard]);
+  }, [fetchLeaderboard, eventEnded]);
 
   // Connect admin socket for broadcasting
   useEffect(() => {
@@ -53,6 +56,20 @@ export default function AdminDashboard() {
   const startEvent    = async () => { await api('post', '/api/admin/start');       adminSocket?.emit('admin_start'); fetchLeaderboard(); };
   const pauseAll      = async () => { await api('post', '/api/admin/pause-all');   fetchLeaderboard(); };
   const unfreezeAll   = async () => { await api('post', '/api/admin/unfreeze-all'); fetchLeaderboard(); };
+  const endEvent      = async () => {
+    if (!confirm('End event for ALL teams? This will stop all timers and lock all participant apps.')) return;
+    await api('post', '/api/admin/end');
+    adminSocket?.emit('admin_end');
+    setEventEnded(true);
+    fetchLeaderboard();
+  };
+  const reopenEvent   = async () => {
+    if (!confirm('Re-open event for all ended teams? Timers will continue from previous totals.')) return;
+    await api('post', '/api/admin/reopen');
+    adminSocket?.emit('admin_reopen');
+    setEventEnded(false);
+    fetchLeaderboard();
+  };
 
   const handleUnfreeze   = async (code, reset) => {
     await api('post', `/api/admin/unfreeze/${code}`, { resetCount: reset });
@@ -96,6 +113,7 @@ export default function AdminDashboard() {
     frozen:        'text-red-400',
     disqualified:  'text-gray-500',
     advanced:      'text-yellow-400',
+    ended:         'text-purple-300',
   };
 
   if (selected) {
@@ -127,9 +145,11 @@ export default function AdminDashboard() {
 
       {/* Global controls */}
       <div className="px-6 py-4 border-b border-gray-800 flex flex-wrap gap-3">
-        <CtrlBtn color="green"  onClick={startEvent}  label="▶ Start Event" />
-        <CtrlBtn color="yellow" onClick={pauseAll}    label="⏸ Pause All" />
-        <CtrlBtn color="blue"   onClick={unfreezeAll} label="🔓 Unfreeze All" />
+        <CtrlBtn color="green"  onClick={startEvent}  label="▶ Start Event" disabled={eventEnded} />
+        <CtrlBtn color="yellow" onClick={pauseAll}    label="⏸ Pause All" disabled={eventEnded} />
+        <CtrlBtn color="blue"   onClick={unfreezeAll} label="🔓 Unfreeze All" disabled={eventEnded} />
+        <CtrlBtn color="purple" onClick={reopenEvent} label="↻ Re-open Event" disabled={!eventEnded} />
+        <CtrlBtn color="red"    onClick={endEvent}    label="⏹ End Event" />
         <span className="ml-auto text-gray-600 text-sm self-center">
           {teams.length} teams · {teams.filter(t => t.status === 'active').length} active ·{' '}
           {teams.filter(t => t.status === 'frozen').length} frozen
@@ -138,6 +158,14 @@ export default function AdminDashboard() {
 
       {/* Leaderboard */}
       <div className="p-6">
+        {eventEnded && (
+          <div className="mb-4 rounded-xl border border-purple-900 bg-purple-950/40 px-5 py-3">
+            <div className="text-purple-200 text-sm font-medium">Event ended</div>
+            <div className="text-purple-300/70 text-xs mt-1">
+              This is the final leaderboard snapshot.
+            </div>
+          </div>
+        )}
         {loading ? (
           <p className="text-gray-600 text-center py-12">Loading…</p>
         ) : (
@@ -185,17 +213,19 @@ export default function AdminDashboard() {
   );
 }
 
-function CtrlBtn({ color, onClick, label }) {
+function CtrlBtn({ color, onClick, label, disabled = false }) {
   const colors = {
     green:  'bg-green-900/40 border-green-800 text-green-400 hover:bg-green-900/70',
     yellow: 'bg-yellow-900/40 border-yellow-800 text-yellow-400 hover:bg-yellow-900/70',
     blue:   'bg-blue-900/40 border-blue-800 text-blue-400 hover:bg-blue-900/70',
     red:    'bg-red-900/40 border-red-800 text-red-400 hover:bg-red-900/70',
+    purple: 'bg-purple-900/40 border-purple-800 text-purple-300 hover:bg-purple-900/70',
   };
   return (
     <button
       onClick={onClick}
-      className={`px-4 py-2 rounded-lg border text-sm font-medium transition-all ${colors[color]}`}
+      disabled={disabled}
+      className={`px-4 py-2 rounded-lg border text-sm font-medium transition-all ${colors[color]} ${disabled ? 'opacity-40 cursor-not-allowed hover:bg-transparent' : ''}`}
     >
       {label}
     </button>

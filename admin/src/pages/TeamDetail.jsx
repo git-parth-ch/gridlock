@@ -20,10 +20,17 @@ export default function TeamDetail({
 }) {
   const [violations, setViolations] = useState([]);
   const [msg, setMsg] = useState('');
+  const [questionTimes, setQuestionTimes] = useState([]);
 
   useEffect(() => {
     api('get', `/api/admin/violations/${teamCode}`)
       .then(r => setViolations(r.data));
+  }, [teamCode]);
+
+  useEffect(() => {
+    api('get', `/api/admin/question-times/${teamCode}`)
+      .then(r => setQuestionTimes(r.data))
+      .catch(() => setQuestionTimes([]));
   }, [teamCode]);
 
   const sendMsg = () => {
@@ -53,6 +60,34 @@ export default function TeamDetail({
             <Btn color="gray"   onClick={() => onDisqualify(teamCode)}       label="🚫 Disqualify" />
             <Btn color="gray"   onClick={() => onLogout?.(teamCode)}        label="⏏ Log out device" />
           </div>
+        </div>
+
+        {/* Question times */}
+        <div className="bg-gray-900 rounded-xl border border-gray-800 p-5">
+          <h3 className="text-gray-400 text-xs uppercase tracking-widest mb-4">Question Times</h3>
+          {(!questionTimes || questionTimes.length === 0) ? (
+            <p className="text-gray-600 text-sm">No solved questions yet.</p>
+          ) : (
+            <div className="max-h-72 overflow-y-auto rounded-lg border border-gray-800">
+              <div className="grid grid-cols-[60px_1fr_120px] bg-gray-950 px-3 py-2 text-[11px] text-gray-500 uppercase tracking-widest">
+                <span>#</span>
+                <span>Question</span>
+                <span>Time</span>
+              </div>
+              {questionTimes.map((q) => (
+                <div key={q.questionId} className="grid grid-cols-[60px_1fr_120px] px-3 py-2 border-t border-gray-800 text-sm">
+                  <span className="text-gray-500 font-mono">{q.displayOrder}</span>
+                  <span className="text-gray-200 truncate">{q.title || q.questionId}</span>
+                  <span className="text-gray-300 font-mono">
+                    {typeof q.timeSeconds === 'number' ? formatMMSS(q.timeSeconds) : '—'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+          <p className="text-gray-600 text-[11px] mt-2">
+            Time is recorded at the moment of the first correct submission per question (from the team’s event clock).
+          </p>
         </div>
 
         {/* Message */}
@@ -102,6 +137,13 @@ export default function TeamDetail({
       </div>
     </div>
   );
+}
+
+function formatMMSS(seconds) {
+  const s = Math.max(0, Math.floor(seconds));
+  const mm = String(Math.floor(s / 60)).padStart(2, '0');
+  const ss = String(s % 60).padStart(2, '0');
+  return `${mm}:${ss}`;
 }
 
 function Btn({ color, onClick, label }) {

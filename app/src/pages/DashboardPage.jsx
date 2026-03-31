@@ -26,6 +26,7 @@ export default function DashboardPage() {
   if (sessionStatus === 'frozen')      return <FrozenOverlay teamCode={team?.code} onLogout={logout} />;
   if (sessionStatus === 'disqualified') return <DisqualifiedScreen onLogout={logout} />;
   if (sessionStatus === 'ended' && coordinate) return <CoordinateReveal coordinate={coordinate} onLogout={logout} />;
+  if (sessionStatus === 'ended' && !coordinate) return <EventEndedScreen onLogout={logout} />;
   if (sessionStatus === 'waiting')     return <WaitingRoom teamCode={team?.code} onLogout={logout} />;
 
   const solved     = questions.filter(q => q.status === 'solved').length;
@@ -73,6 +74,26 @@ export default function DashboardPage() {
           <QuestionCard key={q.id} question={q} index={i + 1} />
         ))}
       </main>
+    </div>
+  );
+}
+
+function EventEndedScreen({ onLogout }) {
+  return (
+    <div className="min-h-screen bg-purple-950 flex flex-col items-center justify-center p-8">
+      <h2 className="text-3xl font-bold text-purple-200 mb-4">Event Ended</h2>
+      <p className="text-purple-200/70 text-center max-w-sm">
+        The organizer ended the event. Please check the final leaderboard with the host.
+      </p>
+      {onLogout && (
+        <button
+          onClick={onLogout}
+          className="mt-8 px-4 py-2 rounded-lg border border-purple-900 text-sm font-medium
+                     text-purple-100 hover:bg-purple-900/40 transition-colors"
+        >
+          Logout
+        </button>
+      )}
     </div>
   );
 }

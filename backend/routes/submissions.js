@@ -3,6 +3,26 @@ const router   = require('express').Router();
 const bcrypt   = require('bcryptjs');
 const supabase = require('../db/supabase');
 
+function secondsSince(iso) {
+  if (!iso) return 0;
+  const ms = new Date(iso).getTime();
+  if (Number.isNaN(ms)) return 0;
+  return Math.max(0, Math.floor((Date.now() - ms) / 1000));
+}
+
+async function getTeamElapsedSeconds(code) {
+  const { data: team } = await supabase
+    .from('teams')
+    .select('status, started_at, total_time_seconds')
+    .eq('code', code)
+    .single();
+
+  if (!team) return null;
+  const base = team.total_time_seconds || 0;
+  const running = team.status === 'active' ? secondsSince(team.started_at) : 0;
+  return base + running;
+}
+
 // POST /api/submissions   { teamCode, questionId, answer, deviceId }
 router.post('/', async (req, res) => {
   try {
@@ -38,6 +58,8 @@ router.post('/', async (req, res) => {
       isCorrect = plain.toLowerCase() === String(question.answer).trim().toLowerCase();
     }
 
+    const timeSinceStart = isCorrect ? await getTeamElapsedSeconds(code) : null;
+
     // Record the submission
     const { error: insertErr } = await supabase.from('submissions').insert({
       team_code: code,
@@ -45,6 +67,7 @@ router.post('/', async (req, res) => {
       device_id: deviceId || null,
       submitted_answer: answer,
       is_correct: isCorrect,
+      time_since_start: (typeof timeSinceStart === 'number' && Number.isFinite(timeSinceStart)) ? timeSinceStart : null,
     });
 
     if (insertErr) {

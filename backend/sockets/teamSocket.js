@@ -134,6 +134,8 @@ module.exports = (io) => {
     socket.on('admin_message',   ({ teamCode, message }) => io.to(teamCode.toUpperCase()).emit('admin_message', { message }));
     socket.on('admin_reveal',    ({ teamCode, coordinate }) => io.to(teamCode.toUpperCase()).emit('coordinate_revealed', { coordinate }));
     socket.on('admin_start',     () => io.emit('event_started'));
+    socket.on('admin_end',       () => io.emit('event_ended'));
+    socket.on('admin_reopen',    () => io.emit('event_started'));
 
     // ── Disconnect ─────────────────────────────────────────────
     socket.on('disconnect', async () => {

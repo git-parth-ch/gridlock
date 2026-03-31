@@ -62,6 +62,25 @@ async function accumulateAndSetStatus(code, nextStatus) {
   }
 }
 
+async function endAllTeams() {
+  const { data: teams } = await supabase
+    .from('teams')
+    .select('code, status')
+    .not('status', 'eq', 'ended');
+
+  const list = teams || [];
+  for (const t of list) {
+    await accumulateAndSetStatus(t.code, 'ended');
+  }
+}
+
+async function reopenEndedTeams() {
+  const now = new Date().toISOString();
+  await supabase.from('teams')
+    .update({ status: 'active', started_at: now })
+    .eq('status', 'ended');
+}
+
 // GET /api/admin/leaderboard
 router.get('/leaderboard', adminAuth, async (req, res) => {
   const { data: teams } = await supabase
@@ -145,6 +164,20 @@ router.post('/disqualify/:code', adminAuth, async (req, res) => {
   res.json({ ok: true });
 });
 
+// POST /api/admin/end   – ends the whole event (final leaderboard)
+router.post('/end', adminAuth, async (req, res) => {
+  await endAllTeams();
+  req.app.locals.io?.emit('event_ended', {});
+  res.json({ ok: true });
+});
+
+// POST /api/admin/reopen   – re-open an ended event
+router.post('/reopen', adminAuth, async (req, res) => {
+  await reopenEndedTeams();
+  req.app.locals.io?.emit('event_started', {});
+  res.json({ ok: true });
+});
+
 // POST /api/admin/reveal/:code    – reveal coordinate to team
 router.post('/reveal/:code', adminAuth, async (req, res) => {
   await supabase.from('teams')
@@ -161,6 +194,57 @@ router.get('/violations/:code', adminAuth, async (req, res) => {
     .eq('team_code', req.params.code)
     .order('occurred_at', { ascending: false });
   res.json(data);
+});
+
+// GET /api/admin/question-times/:code  – per-question completion time for team
+router.get('/question-times/:code', adminAuth, async (req, res) => {
+  const code = String(req.params.code || '').trim().toUpperCase();
+  if (!code) return res.status(400).json({ error: 'team code required' });
+
+  const { data: team } = await supabase
+    .from('teams')
+    .select('question_set_id')
+    .eq('code', code)
+    .single();
+
+  if (!team) return res.status(404).json({ error: 'team not found' });
+
+  const { data: questions } = await supabase
+    .from('questions')
+    .select('id, title, display_order')
+    .eq('question_set_id', team.question_set_id)
+    .order('display_order', { ascending: true });
+
+  const qList = questions || [];
+  const qMap = new Map(qList.map(q => [q.id, q]));
+
+  const { data: subs } = await supabase
+    .from('submissions')
+    .select('question_id, is_correct, time_since_start, submitted_at')
+    .eq('team_code', code)
+    .eq('is_correct', true)
+    .order('submitted_at', { ascending: true });
+
+  const best = new Map(); // questionId -> { time, submitted_at }
+  for (const s of (subs || [])) {
+    const t = typeof s.time_since_start === 'number' ? s.time_since_start : null;
+    if (t == null) continue;
+    const prev = best.get(s.question_id);
+    if (!prev || t < prev.time) best.set(s.question_id, { time: t, submitted_at: s.submitted_at });
+  }
+
+  const out = qList.map(q => {
+    const b = best.get(q.id);
+    return {
+      questionId: q.id,
+      title: q.title,
+      displayOrder: q.display_order,
+      timeSeconds: b?.time ?? null,
+      solvedAt: b?.submitted_at ?? null,
+    };
+  });
+
+  res.json(out);
 });
 
 // POST /api/admin/message/:code   body: { message }

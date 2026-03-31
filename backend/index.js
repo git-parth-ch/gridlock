@@ -32,6 +32,7 @@ app.use('/api/submissions', require('./routes/submissions'));
 app.use('/api/piston', require('./routes/piston'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/execute', require('./routes/execute'));
+app.use('/api', require('./routes/leaderboard'));
 
 require('./sockets/teamSocket')(io);
 
