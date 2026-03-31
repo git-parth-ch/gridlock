@@ -10,12 +10,13 @@ import ViolationBadge from '../components/ViolationBadge';
 const BACKEND = import.meta.env.VITE_BACKEND_URL || 'http://localhost:4000';
 const HTTP_TIMEOUT_MS = 30000;
 
-const LANG_ID = { python: 'python', java: 'java', cpp: 'cpp' };
+const LANG_ID = { python: 'python', java: 'java', cpp: 'cpp', javascript: 'javascript' };
 
 const DEFAULT_CODE = {
   python: '# Write your solution here\n',
   java:   'public class Main {\n    public static void main(String[] args) {\n        // Write your solution here\n    }\n}\n',
   cpp:    '#include <iostream>\nusing namespace std;\nint main() {\n    // Write your solution here\n    return 0;\n}\n',
+  javascript: '// Write your solution here\n',
 };
 
 export default function QuestionPage() {
@@ -39,26 +40,42 @@ export default function QuestionPage() {
   const [feedback, setFeedback] = useState(null);
   const [submitError, setSubmitError] = useState(null);
 
-  const lang = question?.language || 'python';
+  const [lang, setLang] = useState('python');
 
   // Restore draft when opening a question (or default template)
   useEffect(() => {
     if (!question?.id) return;
-    const saved = questionDrafts[question.id];
-    setCode(saved !== undefined && saved !== null ? saved : (DEFAULT_CODE[lang] || ''));
+    const initialLang = question.language || 'python';
+    setLang(initialLang);
+    const saved = questionDrafts[`${question.id}_${initialLang}`] || questionDrafts[question.id];
+    setCode(saved !== undefined && saved !== null ? saved : (DEFAULT_CODE[initialLang] || ''));
     setOutput('');
     setAnswer('');
     setFeedback(null);
     setSubmitError(null);
-  }, [question?.id, lang]);
+  }, [question?.id, question?.language]);
 
   const persistCode = useCallback(
     (val) => {
       setCode(val);
-      if (question?.id) setQuestionDraft(question.id, val);
+      if (question?.id) {
+        setQuestionDraft(`${question.id}_${lang}`, val);
+        setQuestionDraft(question.id, val); // fallback
+      }
     },
-    [question?.id, setQuestionDraft]
+    [question?.id, lang, setQuestionDraft]
   );
+
+  const handleLanguageChange = (e) => {
+    const newLang = e.target.value;
+    setLang(newLang);
+    const saved = questionDrafts[`${question?.id}_${newLang}`];
+    if (saved !== undefined && saved !== null) {
+      setCode(saved);
+    } else {
+      setCode(DEFAULT_CODE[newLang] || '');
+    }
+  };
 
   const runCode = useCallback(async () => {
     if (!question) return;
@@ -213,6 +230,16 @@ export default function QuestionPage() {
           <div className="flex-1 min-h-[300px] flex flex-col border-b-[1px] border-gray-800">
             <div className="bg-[#111] px-6 py-3 border-b-[1px] border-gray-800 text-gray-500 font-mono text-[10px] tracking-widest uppercase flex justify-between items-center">
               <span>WORKSPACE // ACTIVE</span>
+              <select
+                value={lang}
+                onChange={handleLanguageChange}
+                className="bg-[#151515] border-[1px] border-gray-700 text-white px-2 py-1 outline-none font-sans text-xs font-bold"
+              >
+                <option value="python">Python</option>
+                <option value="java">Java</option>
+                <option value="cpp">C/C++</option>
+                <option value="javascript">JavaScript</option>
+              </select>
             </div>
             <div className="flex-1 bg-[#1e1e1e]">
               <Editor

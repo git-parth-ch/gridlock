@@ -107,6 +107,11 @@ router.post('/', async (req, res) => {
       // Run
       result = await runShell(`"${outFile}"`, { cwd: tmpDir });
 
+    } else if (language === 'javascript') {
+      const file = path.join(tmpDir, 'main.js');
+      fs.writeFileSync(file, code);
+      result = await runShell(`node "${file}"`, { cwd: tmpDir });
+
     } else {
       return res.status(400).json({ error: `Unsupported language: ${language}` });
     }

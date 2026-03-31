@@ -1,5 +1,5 @@
 // backend/routes/admin.js
-const router   = require('express').Router();
+const router = require('express').Router();
 const supabase = require('../db/supabase');
 
 // Simple password guard (for demo — use JWT in production)
@@ -98,7 +98,7 @@ router.get('/leaderboard', adminAuth, async (req, res) => {
   (viols || []).forEach(v => {
     if (!vMap[v.team_code]) vMap[v.team_code] = { W: 0, F: 0 };
     if (v.severity === 'WARNING') vMap[v.team_code].W++;
-    if (v.severity === 'FLAG')    vMap[v.team_code].F++;
+    if (v.severity === 'FLAG') vMap[v.team_code].F++;
   });
 
   const nowMs = Date.now();
